@@ -14,9 +14,9 @@ import {
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
 import { STRINGS } from '@/constants/Strings';
-import { useStats } from '@/hooks/useStats';
 import { useNavigation } from '@/hooks/useNavigation';
 import LoadingSpinner from '@/components/LoadingSpinner';
+import { EventDto } from '@/dtos/event/EventDto';
 
 ChartJS.register(
   CategoryScale,
@@ -29,21 +29,37 @@ ChartJS.register(
   Filler
 );
 
-const StatsChart = () => {
-  const { stats, events } = useStats();
+interface StatsChartProps {
+  stats: {
+    totalPurchases: number;
+    totalDownloads: number;
+    totalSignIns: number;
+    dailyEarnings: { date: string; earnings: number }[];
+  };
+  events: EventDto[];
+  onBackClick: () => void;
+}
+
+const StatsChart = ({ stats, events, onBackClick }: StatsChartProps) => {
   const { navigateToUsers } = useNavigation();
 
   if (!stats) return <LoadingSpinner />;
 
   const calculateTotalEarnings = () => {
-    const payEvents = events.filter(event => event.eventName === 'pay');
-    return payEvents.reduce((total, event) => total + (event.amount || 0), 0);
+    if (!stats.dailyEarnings.length) return 0;
+    return stats.dailyEarnings.reduce((total, item) => total + item.earnings, 0);
   };
 
   const getDailyTotals = () => {
+    if (!stats.dailyEarnings.length) return { dates: [], totals: [] };
+
+    const sortedEarnings = [...stats.dailyEarnings].sort(
+      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+    );
+
     return {
-      dates: stats.dailyEarnings.map(item => item.date),
-      totals: stats.dailyEarnings.map(item => item.earnings)
+      dates: sortedEarnings.map(item => new Date(item.date).toLocaleDateString('tr-TR')),
+      totals: sortedEarnings.map(item => item.earnings)
     };
   };
 
@@ -108,7 +124,7 @@ const StatsChart = () => {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">{STRINGS.STATS.TITLE}</h1>
         <button
-          onClick={navigateToUsers}
+          onClick={onBackClick}
           className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
         >
           {STRINGS.BACK_TO_USERS}
