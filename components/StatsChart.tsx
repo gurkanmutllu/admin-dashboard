@@ -14,6 +14,9 @@ import {
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
 import { STRINGS } from '@/constants/Strings';
+import { useStats } from '@/hooks/useStats';
+import { useNavigation } from '@/hooks/useNavigation';
+import LoadingSpinner from '@/components/LoadingSpinner';
 
 ChartJS.register(
   CategoryScale,
@@ -26,58 +29,21 @@ ChartJS.register(
   Filler
 );
 
-interface Stats {
-  totalPurchases: number;
-  totalDownloads: number;
-  totalSignIns: number;
-  dailyEarnings: { date: string; earnings: number }[];
-}
+const StatsChart = () => {
+  const { stats, events } = useStats();
+  const { navigateToUsers } = useNavigation();
 
-interface EventDto {
-  eventName: string;
-  eventDate: string;
-  username: string;
-  amount: number | null;
-}
+  if (!stats) return <LoadingSpinner />;
 
-interface StatsChartProps {
-  stats: Stats;
-  events: EventDto[];
-  onBackClick: () => void;
-}
-
-const StatsChart = ({ stats, events, onBackClick }: StatsChartProps) => {
   const calculateTotalEarnings = () => {
     const payEvents = events.filter(event => event.eventName === 'pay');
-    let total = 0;
-    payEvents.forEach(event => {
-      if (event.amount) {
-        total += event.amount;
-      }
-    });
-    return total;
+    return payEvents.reduce((total, event) => total + (event.amount || 0), 0);
   };
 
   const getDailyTotals = () => {
-    const payEvents = events.filter(event => event.eventName === 'pay');
-    const dailyTotals: { [key: string]: number } = {};
-
-    payEvents.forEach(event => {
-      const dateStr = event.eventDate.split('T')[0];
-      if (!dailyTotals[dateStr]) {
-        dailyTotals[dateStr] = 0;
-      }
-      if (event.amount) {
-        dailyTotals[dateStr] += event.amount;
-      }
-    });
-
-    const sortedDates = Object.keys(dailyTotals)
-      .sort((a, b) => a.localeCompare(b));
-
     return {
-      dates: sortedDates,
-      totals: sortedDates.map(date => dailyTotals[date])
+      dates: stats.dailyEarnings.map(item => item.date),
+      totals: stats.dailyEarnings.map(item => item.earnings)
     };
   };
 
@@ -88,7 +54,7 @@ const StatsChart = ({ stats, events, onBackClick }: StatsChartProps) => {
     labels: dates,
     datasets: [
       {
-        label: 'Daily Earnings',
+        label: STRINGS.STATS.DAILY_EARNINGS_LABEL,
         data: totals,
         borderColor: 'rgba(75, 192, 192, 1)',
         backgroundColor: 'rgba(75, 192, 192, 0.2)',
@@ -142,7 +108,7 @@ const StatsChart = ({ stats, events, onBackClick }: StatsChartProps) => {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">{STRINGS.STATS.TITLE}</h1>
         <button
-          onClick={onBackClick}
+          onClick={navigateToUsers}
           className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
         >
           {STRINGS.BACK_TO_USERS}
@@ -162,12 +128,12 @@ const StatsChart = ({ stats, events, onBackClick }: StatsChartProps) => {
           <p className="text-2xl">{stats.totalSignIns}</p>
         </div>
         <div className="bg-purple-100 p-4 rounded shadow">
-          <h2 className="text-lg font-bold">Last 90 Days Total Earnings</h2>
+          <h2 className="text-lg font-bold">{STRINGS.STATS.DAILY_EARNINGS}</h2>
           <p className="text-2xl">${totalEarnings.toLocaleString('en-US')}</p>
         </div>
       </div>
       <div className="bg-white p-4 rounded shadow">
-        <h2 className="text-lg font-bold mb-4">Daily Earnings Chart</h2>
+        <h2 className="text-lg font-bold mb-4">{STRINGS.STATS.DAILY_EARNINGS}</h2>
         <div style={{ height: '400px' }}>
           <Line data={chartData} options={chartOptions} />
         </div>

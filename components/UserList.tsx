@@ -8,38 +8,33 @@ import { useAuth } from './AuthProvider';
 import { useRouter } from 'next/navigation';
 import { ROUTES } from '@/constants/routes';
 import { STRINGS } from '@/constants/Strings';
+import { useUsers } from '@/hooks/useUsers';
+import { useNavigation } from '@/hooks/useNavigation';
+import { useErrorHandler } from '@/hooks/useErrorHandler';
 
 
 const UsersList = () => {
-  const [users, setUsers] = useState<UserDto[]>([]);
-  const router = useRouter();
-
-  useEffect(() => {
-    const fetchData = async () => {
-      const data = await userService.fetchUsers();
-      setUsers(data);
-    };
-    fetchData();
-  }, []);
-
+  const { users } = useUsers();
+  const { navigateToStats, navigateToLogin } = useNavigation();
+  const { handleError } = useErrorHandler();
   const { logout } = useAuth();
 
   const handleLogout = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       await logout();
-      router.push(ROUTES.LOGIN);
+      navigateToLogin();
     } catch (error) {
-      alert((error as Error).message);
+      handleError(error);
     } 
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      router.push(ROUTES.STATS);
+      navigateToStats();
     } catch (error) {
-      alert((error as Error).message);
+      handleError(error);
     } 
   };
 

@@ -51,10 +51,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const login = async (username: string, password: string) => {
     try {
       setLoading(true);
-      const user = await userService.authenticate({ username, password });
-      if (user) {
-        setUser(user);
-        localStorage.setItem('user', JSON.stringify(user));
+      const authenticatedUser = await userService.authenticate({ username, password });
+      if (authenticatedUser) {
+        localStorage.setItem('user', JSON.stringify(authenticatedUser));
+        setUser(authenticatedUser);
       } else {
         throw new Error(STRINGS.AUTH_ERRORS.INVALID_CREDENTIALS);
       }
